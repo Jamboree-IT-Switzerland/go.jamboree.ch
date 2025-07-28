@@ -37,3 +37,28 @@ jobs:
           context: ./
           tags: |
             ghcr.io/jamboree-it-switzerland/go.jamboree.ch/nginx:latest
+
+  deploy:
+      runs-on: ubuntu-latest
+      permissions:
+        id-token: write #This is required for requesting the JWT
+        contents: read #This is required for actions/checkout
+  
+      needs: build-and-push-container
+      
+  
+      steps:
+        - name: Login to Azure
+          uses: azure/login@v2
+          with:
+            client-id: ${{ secrets.AZURE_DEPLOY_APP_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  
+        - name: Deploy to Azure Web App
+          id: deploy-to-webapp
+          uses: azure/webapps-deploy@v2
+          with:
+            app-name: 'go-jamboree'
+            slot-name: 'Production'
+            images: 'ghcr.io/jamboree-it-switzerland/go.jamboree.ch/nginx:latest'
